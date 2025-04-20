@@ -126,8 +126,8 @@ async function initializeMenu() {
   }
 }
 
-// Create server
-const PORT = process.env.PORT || 9000;
+// Create servers
+const PORT = process.env.PORT || 3000;
 const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
@@ -325,7 +325,7 @@ io.on("connection", (socket) => {
               email: "customer@example.com",
               amount: activeOrder.total * 100,
               reference: `order_${activeOrder._id}`,
-              callback_url: "http://localhost:9000/payment/callback",
+              callback_url: "http://localhost:3000/payment/callback",
             };
 
             // Validate Paystack key exists
