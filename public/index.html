@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Altschool RestaurantBot</title>
+    <style>
+      :root {
+        --primary-color: #2c3e50;
+        --secondary-color: #27ae60;
+        --user-bg: #3498db;
+        --bot-bg: #ecf0f1;
+        --text-dark: #2c3e50;
+        --text-light: #ffffff;
+      }
+
+      body {
+        margin: 0;
+        padding: 20px;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: #2b2b29;
+        /* background: #f5f6fa;#2b2b29 */
+      }
+
+      #chat-container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      #messages {
+        height: 60vh;
+        padding: 20px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      .message {
+        max-width: 85%;
+        padding: 12px 18px;
+        border-radius: 15px;
+        animation: fadeIn 0.3s ease-in;
+        line-height: 1.5;
+        word-wrap: break-word;
+      }
+
+      .user-message {
+        background: var(--user-bg);
+        color: var(--text-light);
+        align-self: flex-end;
+        border-bottom-right-radius: 5px;
+      }
+
+      .bot-message {
+        background: var(--bot-bg);
+        color: var(--text-dark);
+        align-self: flex-start;
+        border-bottom-left-radius: 5px;
+        white-space: pre-wrap;
+      }
+
+      .input-group {
+        display: flex;
+        padding: 20px;
+        background: #f8f9fa;
+        border-top: 1px solid #eee;
+      }
+
+      #input {
+        flex: 1;
+        padding: 12px 20px;
+        border: 2px solid #dfe6e9;
+        border-radius: 25px;
+        margin-right: 10px;
+        font-size: 16px;
+        transition: all 0.3s ease;
+      }
+
+      #input:focus {
+        outline: none;
+        border-color: var(--secondary-color);
+        box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.1);
+      }
+
+      button {
+        padding: 12px 30px;
+        background: var(--secondary-color);
+        color: white;
+        border: none;
+        border-radius: 25px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+      }
+
+      button:hover {
+        background: #219a52;
+        transform: translateY(-2px);
+        box-shadow: 0 3px 10px rgba(39, 174, 96, 0.2);
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Scrollbar styling */
+      #messages::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      #messages::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+      }
+
+      #messages::-webkit-scrollbar-thumb {
+        background: #b2bec3;
+        border-radius: 4px;
+      }
+
+      #messages::-webkit-scrollbar-thumb:hover {
+        background: #636e72;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="chat-container">
+      <div id="messages"></div>
+      <div class="input-group">
+        <input type="text" id="input" placeholder="Type your selection..." />
+        <button onclick="sendMessage()">Send</button>
+      </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io();
+      const messages = document.getElementById("messages");
+      const input = document.getElementById("input");
+
+      // Enhanced addMessage function
+      function addMessage(text, isUser = false) {
+        const messageDiv = document.createElement("div");
+        messageDiv.className = `message ${
+          isUser ? "user-message" : "bot-message"
+        }`;
+
+        // Preserve line breaks and formatting
+        messageDiv.innerHTML = text.replace(/\n/g, "<br>");
+
+        messages.appendChild(messageDiv);
+        messages.scrollTop = messages.scrollHeight;
+      }
+
+      // Payment status handler
+      function handlePaymentStatus() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const paymentStatus = urlParams.get("payment");
+        const message = urlParams.get("message");
+
+        if (paymentStatus === "success") {
+          addMessage(
+            "✅ Payment successful! Your order is being processed.",
+            false
+          );
+        } else if (paymentStatus === "error") {
+          const errorMessage = message
+            ? `⚠️ Payment failed: ${decodeURIComponent(message)}`
+            : "⚠️ Payment failed due to unknown error";
+          addMessage(errorMessage, false);
+        }
+
+        // Clean URL after processing
+        window.history.replaceState(
+          {},
+          document.title,
+          window.location.pathname
+        );
+      }
+
+      // Socket.io handlers
+      socket.on("bot-message", (text) => {
+        addMessage(text);
+      });
+
+      socket.on("redirect", (url) => {
+        window.open(url, "_blank");
+        addMessage("🔄 Redirecting to payment page...", false);
+      });
+
+      // Message sending
+      function sendMessage() {
+        const message = input.value.trim();
+        if (message) {
+          addMessage(message, true);
+          socket.emit("user-message", message);
+          input.value = "";
+        }
+      }
+
+      // Event listeners
+      input.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") sendMessage();
+      });
+
+      // Initial setup
+      document.addEventListener("DOMContentLoaded", () => {
+        handlePaymentStatus();
+        socket.emit("connection-init"); // Notify server of new connection
+      });
+    </script>
+  </body>
+</html>
