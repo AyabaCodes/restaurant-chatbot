@@ -127,8 +127,9 @@ async function initializeMenu() {
 }
 
 // Create server
-const server = app.listen(9000, () => {
-  console.log("Server running on port 9000");
+const PORT = process.env.PORT || 9000;
+const server = app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
 
 // Socket.io setup
