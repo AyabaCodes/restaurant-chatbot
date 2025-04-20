@@ -5,11 +5,18 @@ const MongoStore = require("connect-mongo");
 const mongoose = require("mongoose");
 const socketio = require("socket.io");
 const axios = require("axios");
+const cors = require("cors");
 const { v4: uuidv4 } = require("uuid");
 
 const app = express();
 app.use(express.static("public"));
 app.use(express.json());
+app.use(
+  cors({
+    origin: process.env.BASE_URL,
+    credentials: true,
+  })
+);
 
 // Check environment variables before starting
 if (!process.env.PAYSTACK_SECRET_KEY) {
@@ -325,7 +332,10 @@ io.on("connection", (socket) => {
               email: "customer@example.com",
               amount: activeOrder.total * 100,
               reference: `order_${activeOrder._id}`,
-              callback_url: "http://localhost:3000/payment/callback",
+              callback_url:
+                process.env.NODE_ENV === "production"
+                  ? `${process.env.BASE_URL}/payment/callback`
+                  : `${process.env.DEV_BASE_URL}/payment/callback`,
             };
 
             // Validate Paystack key exists
